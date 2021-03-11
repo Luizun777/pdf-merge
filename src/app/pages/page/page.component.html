@@ -1,0 +1,7 @@
+<form [formGroup]="referenciapdfForm">
+    <input type="file" accept=".pdf" (change)="subir($event)" multiple>
+</form>
+<div cdkDropList class="example-list" (cdkDropListDropped)="drop($event)">
+  <div class="example-box" *ngFor="let movie of arrayFile" cdkDrag>{{movie.name}}</div>
+</div>
+<button (click)="mergePDF()">Merge</button>
