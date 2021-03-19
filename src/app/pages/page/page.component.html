@@ -2,6 +2,11 @@
     <input type="file" accept=".pdf" (change)="subir($event)" multiple>
 </form>
 <div cdkDropList class="example-list" (cdkDropListDropped)="drop($event)">
-  <div class="example-box" *ngFor="let movie of arrayFile" cdkDrag>{{movie.name}}</div>
+  <div class="example-box" *ngFor="let file of arrayFile; let i = index" cdkDrag>
+    {{i+1}} - {{file.name}}
+    <button mat-mini-fab (click)="elminar(i)" color="warn">
+        <mat-icon>X</mat-icon>
+    </button>
+  </div>
 </div>
-<button (click)="mergePDF()">Merge</button>
+<button mat-stroked-button (click)="mergePDF()">Merge</button>

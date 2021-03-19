@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -9,11 +10,11 @@ export class MergePdfService {
 
   constructor(private http: HttpClient) { }
 
-  merge(urlDocument: string, file: any): Observable<any> {
-    return this.http.post(urlDocument, file, { responseType: 'blob' });
+  merge(file: any): Observable<any> {
+    return this.http.post(`${environment.urlApi}merge`, file, { responseType: 'blob' });
   }
 
-  downloadFile(urlDocument: string): Observable<any> {
-    return this.http.get(urlDocument, { responseType: 'blob' });
+  deleteFile(nameFile: string): Observable<any> {
+    return this.http.delete(`${environment.urlApi}delete-file/${nameFile}`);
   }
 }

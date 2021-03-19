@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MergePdfService } from 'src/app/services/merge-pdf.service';
-import {CdkDragDrop, moveItemInArray} from '@angular/cdk/drag-drop';
+import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import * as fileSaver from 'file-saver';
 
 @Component({
   selector: 'app-page',
@@ -10,21 +11,8 @@ import {CdkDragDrop, moveItemInArray} from '@angular/cdk/drag-drop';
 })
 export class PageComponent implements OnInit {
 
-  movies = [
-    'Episode I - The Phantom Menace',
-    'Episode II - Attack of the Clones',
-    'Episode III - Revenge of the Sith',
-    'Episode IV - A New Hope',
-    'Episode V - The Empire Strikes Back',
-    'Episode VI - Return of the Jedi',
-    'Episode VII - The Force Awakens',
-    'Episode VIII - The Last Jedi',
-    'Episode IX – The Rise of Skywalker'
-  ];
-
   referenciapdfForm: FormGroup;
   arrayFile: any = [];
-  table: any = [];
 
   constructor(
     private formBuilder: FormBuilder,
@@ -44,16 +32,17 @@ export class PageComponent implements OnInit {
   // get getReferencias(): FormArray { return this.referenciapdfForm.get('pdfArray') as FormArray; }
 
   mergePDF() {
-    const array = this.referenciapdfForm.controls['pdfArray'].value;
-    console.log(array);
-    const url = 'http://localhost:5000/api/pdf/merge';
     let form = new FormData();
     form.append('fileName', 'file')
-    for (const iterator of this.arrayFile) {
-      form.append('file', iterator)
-    }
-    this.mergeSrv.merge(url, form).subscribe((data) => {
+    this.arrayFile.forEach((file: any) => form.append('file', file));
+    this.mergeSrv.merge(form).subscribe((data: Blob) => {
       console.log(data);
+      // const blob: any = new Blob(data.infoPdf.data, { type: 'application/pdf' });
+      fileSaver.saveAs(data, `file.pdf`);
+    }, (x) => {
+      setTimeout(() => {
+        this.mergePDF();
+      }, 2000);
     })
   }
 
@@ -68,6 +57,11 @@ export class PageComponent implements OnInit {
 
   drop(event: CdkDragDrop<string[]>) {
     moveItemInArray(this.arrayFile, event.previousIndex, event.currentIndex);
+  }
+
+  elminar(file: any) {
+    console.log(file);
+    this.arrayFile.splice(file, 1);
   }
 
 }
