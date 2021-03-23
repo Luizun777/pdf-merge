@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { MergePdfService } from 'src/app/services/merge-pdf.service';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import * as fileSaver from 'file-saver';
+import { PDFDocument } from 'pdf-lib';
 
 @Component({
   selector: 'app-page',
@@ -12,12 +12,9 @@ import * as fileSaver from 'file-saver';
 export class PageComponent implements OnInit {
 
   referenciapdfForm: FormGroup;
-  arrayFile: any = [];
+  arrayBase: any = [];
 
-  constructor(
-    private formBuilder: FormBuilder,
-    private mergeSrv: MergePdfService
-  ) { }
+  constructor(private formBuilder: FormBuilder) { }
 
   ngOnInit(): void {
     this.formInit();
@@ -25,43 +22,59 @@ export class PageComponent implements OnInit {
 
   formInit() {
     this.referenciapdfForm = this.formBuilder.group({
-      pdfArray: this.formBuilder.array([],[Validators.required])
+      nameFile: new FormControl('File', [Validators.required]),
+      pdfArray: this.formBuilder.array([])
     });
   }
 
-  // get getReferencias(): FormArray { return this.referenciapdfForm.get('pdfArray') as FormArray; }
+  get getReferencias(): FormArray { return this.referenciapdfForm.get('pdfArray') as FormArray; }
 
-  mergePDF() {
-    let form = new FormData();
-    form.append('fileName', 'file')
-    this.arrayFile.forEach((file: any) => form.append('file', file));
-    this.mergeSrv.merge(form).subscribe((data: Blob) => {
-      console.log(data);
-      // const blob: any = new Blob(data.infoPdf.data, { type: 'application/pdf' });
-      fileSaver.saveAs(data, `file.pdf`);
-    }, (x) => {
-      setTimeout(() => {
-        this.mergePDF();
-      }, 2000);
-    })
+  async mergePDF() {
+    const pdfDoc = await PDFDocument.create();
+    for (const iterator of this.arrayBase) {
+      const donorPdfDoc = await PDFDocument.load(iterator);
+      const docLength = donorPdfDoc.getPageCount();
+      console.log(docLength);
+      for(var k = 0; k < docLength; k++) {
+        const [donorPage] = await pdfDoc.copyPages(donorPdfDoc, [k]);
+        pdfDoc.addPage(donorPage);
+    }
+    }
+    const pdfBytes = await pdfDoc.save();
+    const blob: any = new Blob([pdfBytes], { type: 'application/pdf' });    
+    fileSaver.saveAs(blob, `${this.referenciapdfForm.value.nameFile}.pdf`);
+
+    this.arrayBase = [];
+    this.referenciapdfForm.controls['pdfArray'].setValue([]);
+
   }
 
-  subir(evento: any) {
-    console.log(evento.target.files.length);
-    // this.arrayFile = evento.target.files
+  async getBase64(file: any) {
+    let reader = new FileReader();
+    await reader.readAsDataURL(file);
+    reader.onload = async () => {
+      await this.arrayBase.push(reader.result)
+    };
+    reader.onerror = (error) => {
+      console.log('Error: ', error);
+    };
+  }
+
+  async subir(evento: any) {
     for (const iterator of evento.target.files) {
-      console.log(iterator.name);
-      this.arrayFile.push(iterator);
+      await this.getBase64(iterator);
+      this.getReferencias.value.push(iterator);
     }
   }
 
   drop(event: CdkDragDrop<string[]>) {
-    moveItemInArray(this.arrayFile, event.previousIndex, event.currentIndex);
+    moveItemInArray(this.arrayBase, event.previousIndex, event.currentIndex);
+    moveItemInArray(this.getReferencias.value, event.previousIndex, event.currentIndex);
   }
 
   elminar(file: any) {
-    console.log(file);
-    this.arrayFile.splice(file, 1);
+    this.arrayBase.splice(file, 1);
+    this.getReferencias.value.splice(file, 1);
   }
 
 }
